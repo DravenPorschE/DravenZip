@@ -114,24 +114,22 @@ MOOD_PROBABILITIES = {"happy": 0.7, "angry": 0.3}
 # RECORDING INDICATOR FUNCTIONS
 # ============================================================================
 
+# ============================================================================
+# RECORDING INDICATOR FUNCTIONS
+# ============================================================================
+
 def create_recording_indicator():
     """Create a recording indicator that appears as an overlay in the corner"""
     global recording_indicator
     
-    # Create a small canvas just for the indicator area
-    indicator_width = 60
-    indicator_height = 30
+    # Create a simple label for the indicator - use root window color for transparency
+    recording_indicator = tk.Label(root, text="● REC", 
+                                  font=("Arial", 12, "bold"),
+                                  fg="#990000", bg="black",  # Match root background
+                                  highlightthickness=0)
     
-    recording_indicator = tk.Canvas(root, width=indicator_width, 
-                                   height=indicator_height, 
-                                   bg='', highlightthickness=0)
-    
-    # Position in top-right corner with small offset
-    x_pos = SCREEN_WIDTH - indicator_width - 10
-    y_pos = 10
-    
-    recording_indicator.place(x=x_pos, y=y_pos)
-    recording_indicator.lower()  # Place behind other widgets initially
+    # Position in top-right corner
+    recording_indicator.place(x=SCREEN_WIDTH - 80, y=10)
     
     # Make it invisible by default
     recording_indicator.place_forget()
@@ -145,9 +143,16 @@ def show_recording_indicator():
     
     is_recording = True
     
-    # Bring to front as an overlay
-    recording_indicator.lift()
-    recording_indicator.place(x=SCREEN_WIDTH - 70, y=10)
+    # Update background to match current view
+    if current_view == "face":
+        recording_indicator.config(bg="black")
+    elif current_view == "calendar":
+        recording_indicator.config(bg="white")
+    elif current_view == "weather":
+        recording_indicator.config(bg="white")
+    
+    # Show the indicator
+    recording_indicator.place(x=SCREEN_WIDTH - 80, y=10)
     
     # Start flashing animation
     start_flashing_indicator()
@@ -174,24 +179,14 @@ def start_flashing_indicator():
     if not is_recording or not recording_indicator:
         return
     
-    # Clear the canvas
-    recording_indicator.delete("all")
-    
-    # Draw the red dot and text
     current_time = time.time()
     is_on = int(current_time * 2) % 2 == 0  # Flash twice per second
     
-    # Color: bright red when on, dark red when off
-    color = "#FF0000" if is_on else "#990000"
-    
-    # Draw red dot (●)
-    dot_size = 20
-    recording_indicator.create_text(10, 15, text="●", 
-                                   fill=color, font=("Arial", 20))
-    
-    # Draw "REC" text
-    recording_indicator.create_text(40, 15, text="REC", 
-                                   fill=color, font=("Arial", 10, "bold"))
+    # Toggle colors
+    if is_on:
+        recording_indicator.config(fg="#FF0000")  # Bright red
+    else:
+        recording_indicator.config(fg="#990000")  # Dark red
     
     # Schedule next flash
     if is_recording and root.winfo_exists():
@@ -1274,3 +1269,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
