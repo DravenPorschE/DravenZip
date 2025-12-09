@@ -22,7 +22,8 @@ from typecast_api import text_to_speech_api
 from get_intent import getSekaiIntent
 from vosk_transcriber import transcribe_wav
 from intent_text import get_intent
-from whisper_audio_transcribe import transcribe_wav_file
+from send_audio import transcribe_wav_file
+#from whisper_audio_transcribe import transcribe_wav_file
 
 # ============================================================================
 # GLOBAL VARIABLES AND SHARED STATE
