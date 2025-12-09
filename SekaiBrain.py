@@ -643,8 +643,8 @@ def record_audio():
     update_title("Recording...")
     
     # Start LED flashing in a separate thread
-    flash_thread = threading.Thread(target=flash_led_while_recording, daemon=True)
-    flash_thread.start()
+    # flash_thread = threading.Thread(target=flash_led_while_recording, daemon=True)
+    # flash_thread.start()
     
     # Record for 5 seconds
     recording_file = "test_recording.wav"
