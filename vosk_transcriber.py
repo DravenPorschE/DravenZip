@@ -29,7 +29,7 @@ def boost_volume(input_wav, output_wav, boost_db=20):
     louder.export(output_wav, format="wav")
 
 
-def transcribe_audio(wav_path, model_path="vosk-model-en-us-0.22-lgraph"):
+def transcribe_audio(wav_path, model_path="vosk-model-small-en-us-0.15"):
     wf = wave.open(wav_path, "rb")
 
     if wf.getnchannels() != 1:
@@ -114,4 +114,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
