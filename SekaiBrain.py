@@ -973,6 +973,8 @@ def fsr_monitoring_thread():
                     if fsr_tap_count >= 2:
                         print("[FSR Thread] ✅ Double tap detected! Starting recording...")
                         
+                        process_ui_commands()
+
                         # Send event to UI thread
                         fsr_event_queue.put(('fsr_detected',))
                         
@@ -1045,7 +1047,7 @@ def process_ui_commands():
 def play_mood_audio(mood):
     """Play random audio file based on mood, then start recording"""
     # Determine which folder to use based on mood
-    audio_folder = "voices_happy" if mood == "happy" else "voices_angry"
+    audio_folder = "happy_results" if mood == "happy" else "angry_results"
     
     print(f"[Audio] Playing random audio from {audio_folder}")
     
