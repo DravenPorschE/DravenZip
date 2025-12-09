@@ -22,7 +22,7 @@ from typecast_api import text_to_speech_api
 from get_intent import getSekaiIntent
 from vosk_transcriber import transcribe_wav
 from intent_text import get_intent
-#from whisper_audio_transcribe import transcribe_wav_file
+from whisper_audio_transcribe import transcribe_wav_file
 
 # ============================================================================
 # GLOBAL VARIABLES AND SHARED STATE
@@ -923,66 +923,58 @@ def play_mood_audio(current_mood):
         print(f"Audio file not found: {audio_file}")
 
 def send_audio(recording_file):
-    # send audio to the server to trancsribe it
-    result = transcribe_wav(recording_file)
+    # 1. Transcribe audio
+    result = transcribe_wav_file(recording_file)
 
-    show_transcript(result)
-
-    intent = get_intent(result)
-    if intent in ["display_calendar", "display_weather"]:
-        # do something
-
-        if intent == "display_calendar":
-            show_calendar()
-            # play the result current mood voice randomly
-            if current_mood == "happy":
-                play_mood_audio_result("happy")
-            if current_mood == "angry":
-                play_mood_audio_result("angry")
-
-        if intent == "display_weather":
-            show_weather()
-            # play the result current mood voice randomly
-            if current_mood == "happy":
-                play_mood_audio_result("happy")
-            if current_mood == "angry":
-                play_mood_audio_result("angry")
-
+    if not result:
+        print("No transcription result.")
         return
-    
-    if result and intent == "none":
-        print("Transcription:")
-        print(result)
 
-        API_KEY = "__pltMzLwjRtejoHYcjCEi984cBgKa6qMU6EiSkEs2Xne "  # Replace with your actual API key
-    
-        # Test text
-        #test_text = ai_response
+    print("Transcription:")
+    print(result)
 
-        ai_intent = getSekaiIntent(result)
+    # 2. Ask Sekai for JSON response
+    sekai_json = getSekaiResponse(result, current_mood)
 
-        print(ai_intent)
-        data = json.loads(ai_intent)  # Parse JSON string to dictionary
-        command_value = data["command"]  # Access the value
+    print("Raw Sekai JSON:")
+    print(sekai_json)
 
-        ai_response = getSekaiResponse(result, current_mood)
+    # 3. Parse Sekai JSON
+    try:
+        data = json.loads(sekai_json)
+        sekai_text = data.get("result", "")
+        command = data.get("command", "none")
+    except:
+        print("ERROR: Sekai returned invalid JSON:")
+        print(sekai_json)
+        return
 
-        # Generate speech
-        audio_file = text_to_speech_api(ai_response, API_KEY)
-        
-        if audio_file and os.path.exists(audio_file):
-            print(f"\n🎵 To play the audio on Raspberry Pi:")
-            print(f"   aplay {audio_file}")
-            
-            # Optional: Play it automatically
-            import subprocess
-            try:
-                subprocess.run(['aplay', audio_file], check=True)
-            except:
-                print("   Could not play audio automatically")
-        
-        else:
-            print("Transcription failed.")
+    print("Sekai says:", sekai_text)
+    print("Command detected:", command)
+
+    # 4. Handle commands FIRST before speaking
+    if command == "display_calendar":
+        show_calendar()
+        play_mood_audio_result(current_mood)
+
+    elif command == "display_weather":
+        show_weather()
+        play_mood_audio_result(current_mood)
+
+    # 5. Convert the result text to speech (always)
+    API_KEY = "__pltMzLwjRtejoHYcjCEi984cBgKa6qMU6EiSkEs2Xne"
+    audio_file = text_to_speech_api(sekai_text, API_KEY)
+
+    # 6. Play audio file
+    if audio_file and os.path.exists(audio_file):
+        print("\n🎵 Playing Sekai audio...")
+        try:
+            subprocess.run(["aplay", audio_file], check=True)
+        except:
+            print("Could not auto-play audio.")
+    else:
+        print("TTS failed to generate audio.")
+
 
 def playback_audio(recording_file):
     """Play back recorded audio"""
