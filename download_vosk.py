@@ -6,9 +6,9 @@ import shutil
 
 def download_vosk_model():
     # Model URL from Vosk website
-    model_url = "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip"
-    model_filename = "vosk-model-small-en-us-0.15.zip"
-    model_dir = "vosk-model-small-en-us-0.15"
+    model_url = "https://alphacephei.com/vosk/models/vosk-model-en-us-0.22-lgraph.zip"
+    model_filename = "vosk-model-en-us-0.22-lgraph.zip"
+    model_dir = "vosk-model-en-us-0.22-lgraph"
     
     print(f"Downloading Vosk model from: {model_url}")
     
