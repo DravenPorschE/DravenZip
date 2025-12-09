@@ -102,6 +102,91 @@ AUDIO_DEVICE = "plughw:2,0"
 MOOD_PROBABILITIES = {"happy": 0.7, "angry": 0.3}
 
 # ============================================================================
+# TRANSCRIPT DISPLAY FUNCTIONS
+# ============================================================================
+
+# Global variables for transcript display
+transcript_label = None
+current_transcript = ""
+
+def create_transcript_label():
+    """Create a label in top-left corner to display transcribed text"""
+    global transcript_label
+    
+    # Create a label for the transcript text
+    transcript_label = tk.Label(root, text="", 
+                                font=("Arial", 10),
+                                bg="#000000",  # Black background
+                                fg="#FFFFFF",  # White text
+                                wraplength=200,  # Limit width to 200 pixels
+                                justify="left",
+                                anchor="nw",
+                                padx=8,
+                                pady=4,
+                                relief="flat")
+    
+    # Position in top-left corner
+    transcript_label.place(x=10, y=10)
+    
+    # Make it invisible by default (will show when there's text)
+    transcript_label.place_forget()
+
+def show_transcript(text):
+    """
+    Display transcribed text in top-left corner of screen
+    
+    Parameters:
+    text (str): The transcribed text to display
+    """
+    global current_transcript, transcript_label
+    
+    # Store the text
+    current_transcript = text
+    
+    # Create label if it doesn't exist
+    if not transcript_label:
+        create_transcript_label()
+    
+    if transcript_label and root.winfo_exists():
+        if text and text.strip():  # Only show if there's non-empty text
+            # Limit text length to prevent overflow
+            if len(text) > 100:
+                display_text = text[:97] + "..."
+            else:
+                display_text = text
+            
+            # Update label text
+            transcript_label.config(text=display_text)
+            
+            # Update colors based on current view
+            if current_view == "face":
+                transcript_label.config(bg="#000000", fg="#FFFFFF")  # Black bg, white text for face view
+            else:
+                transcript_label.config(bg="#FFFFFF", fg="#000000")  # White bg, black text for other views
+            
+            # Show the label
+            transcript_label.place(x=10, y=10)
+        else:
+            # Hide the label if text is empty
+            transcript_label.place_forget()
+
+def clear_transcript():
+    """Clear the transcript display"""
+    global current_transcript
+    current_transcript = ""
+    if transcript_label and transcript_label.winfo_exists():
+        transcript_label.place_forget()
+
+def update_transcript_background():
+    """Update transcript label colors when view changes"""
+    global transcript_label
+    if transcript_label and transcript_label.winfo_ismapped():
+        if current_view == "face":
+            transcript_label.config(bg="#000000", fg="#FFFFFF")
+        else:
+            transcript_label.config(bg="#FFFFFF", fg="#000000")
+
+# ============================================================================
 # RECORDING INDICATOR FUNCTIONS
 # ============================================================================
 
@@ -322,6 +407,8 @@ def hide_all_views():
         face_frame.grid_remove()
     if weather_frame and weather_frame.winfo_exists():
         weather_frame.grid_remove()
+
+    clear_transcript()
 
 def update_title(title):
     """Update window title"""
@@ -840,6 +927,8 @@ def play_mood_audio(current_mood):
 def send_audio(recording_file):
     # send audio to the server to trancsribe it
     result = transcribe_wav(recording_file)
+
+    show_transcript(result)
 
     intent = get_intent(result)
     if intent in ["display_calendar", "display_weather"]:
