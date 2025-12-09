@@ -87,6 +87,11 @@ face_frame = None
 weather_frame = None
 face_label = None
 
+# Recording indicator
+recording_indicator = None
+is_recording = False
+recording_flash_id = None
+
 # Current state
 current_view = "face"  # CHANGED: Start with face view
 current_mood = "happy"
@@ -100,6 +105,97 @@ AUDIO_DEVICE = "plughw:2,0"
 
 # Mood probability (7 happy : 3 angry)
 MOOD_PROBABILITIES = {"happy": 0.7, "angry": 0.3}
+
+# ============================================================================
+# RECORDING INDICATOR FUNCTIONS
+# ============================================================================
+
+# ============================================================================
+# RECORDING INDICATOR FUNCTIONS
+# ============================================================================
+
+def create_recording_indicator():
+    """Create a recording indicator that appears as an overlay in the corner"""
+    global recording_indicator
+    
+    # Create a small canvas just for the indicator area
+    indicator_width = 60
+    indicator_height = 30
+    
+    recording_indicator = tk.Canvas(root, width=indicator_width, 
+                                   height=indicator_height, 
+                                   bg='', highlightthickness=0)
+    
+    # Position in top-right corner with small offset
+    x_pos = SCREEN_WIDTH - indicator_width - 10
+    y_pos = 10
+    
+    recording_indicator.place(x=x_pos, y=y_pos)
+    recording_indicator.lower()  # Place behind other widgets initially
+    
+    # Make it invisible by default
+    recording_indicator.place_forget()
+
+def show_recording_indicator():
+    """Show and start flashing the recording indicator"""
+    global recording_indicator, is_recording, recording_flash_id
+    
+    if not recording_indicator:
+        create_recording_indicator()
+    
+    is_recording = True
+    
+    # Bring to front as an overlay
+    recording_indicator.lift()
+    recording_indicator.place(x=SCREEN_WIDTH - 70, y=10)
+    
+    # Start flashing animation
+    start_flashing_indicator()
+
+def hide_recording_indicator():
+    """Hide the recording indicator"""
+    global recording_indicator, is_recording, recording_flash_id
+    
+    is_recording = False
+    
+    # Stop the flashing animation
+    if recording_flash_id and root.winfo_exists():
+        root.after_cancel(recording_flash_id)
+        recording_flash_id = None
+    
+    # Hide the indicator
+    if recording_indicator:
+        recording_indicator.place_forget()
+
+def start_flashing_indicator():
+    """Start the flashing animation for the recording indicator"""
+    global recording_indicator, is_recording, recording_flash_id
+    
+    if not is_recording or not recording_indicator:
+        return
+    
+    # Clear the canvas
+    recording_indicator.delete("all")
+    
+    # Draw the red dot and text
+    current_time = time.time()
+    is_on = int(current_time * 2) % 2 == 0  # Flash twice per second
+    
+    # Color: bright red when on, dark red when off
+    color = "#FF0000" if is_on else "#990000"
+    
+    # Draw red dot (●)
+    dot_size = 20
+    recording_indicator.create_text(10, 15, text="●", 
+                                   fill=color, font=("Arial", 20))
+    
+    # Draw "REC" text
+    recording_indicator.create_text(40, 15, text="REC", 
+                                   fill=color, font=("Arial", 10, "bold"))
+    
+    # Schedule next flash
+    if is_recording and root.winfo_exists():
+        recording_flash_id = root.after(250, start_flashing_indicator)  # Flash every 250ms
 
 # ============================================================================
 # MODULAR VIEW FUNCTIONS
@@ -634,7 +730,7 @@ def set_face_mood(mood):
 # ============================================================================
 
 def record_audio():
-    """Record audio for 5 seconds with flashing LED - NON-BLOCKING"""
+    """Record audio for 5 seconds with visual indicator - NON-BLOCKING"""
     print("\n" + "="*50)
     print("STARTING 5-SECOND AUDIO RECORDING")
     print("="*50)
@@ -642,9 +738,9 @@ def record_audio():
     # Change title to show recording
     update_title("Recording...")
     
-    # Start LED flashing in a separate thread
-    # flash_thread = threading.Thread(target=flash_led_while_recording, daemon=True)
-    # flash_thread.start()
+    # Show visual recording indicator
+    if root and root.winfo_exists():
+        root.after(0, show_recording_indicator)
     
     # Record for 5 seconds
     recording_file = "test_recording.wav"
@@ -678,21 +774,15 @@ def record_audio():
                     
                     sendAudioThread = threading.Thread(target=send_audio, args=(recording_file,), daemon=True)
                     sendAudioThread.start()
-
-                    # # Play back the recording in separate thread
-                    # playback_thread = threading.Thread(target=playback_audio, 
-                    #                                  args=(recording_file,), 
-                    #                                  daemon=True)
-                    # playback_thread.start()
                 else:
                     print(f"[Recording] ❌ File not created")
             else:
                 print(f"[Recording] ❌ Recording failed!")
                 print(f"[Recording] Error: {stderr.decode()[:200]}")
             
-            # Stop LED and return to happy face
-            GPIO.output(LED_PIN, GPIO.LOW)
+            # Hide visual indicator and return to happy face
             if root and root.winfo_exists():
+                root.after(0, hide_recording_indicator)
                 # Set back to default happy face
                 set_face_mood("happy")
                 update_title("Sekai is happy")  # Update title to match
@@ -703,8 +793,8 @@ def record_audio():
             
     except Exception as e:
         print(f"[Recording] ❌ Exception: {e}")
-        GPIO.output(LED_PIN, GPIO.LOW)
         if root and root.winfo_exists():
+            root.after(0, hide_recording_indicator)
             set_face_mood("happy")
             update_title("Sekai is happy")
 
@@ -738,7 +828,7 @@ def play_mood_audio(current_mood):
         print(f"Audio file not found: {audio_file}")
 
 def send_audio(recording_file):
-    # send audio to the server to trancsribe it
+    # send audio to the server to transcribe it
     result = transcribe_wav(recording_file)
 
     intent = get_intent(result)
@@ -810,27 +900,6 @@ def playback_audio(recording_file):
             print(f"[Recording] ❌ Playback failed: {play_result.stderr[:100]}")
     except Exception as e:
         print(f"[Recording] Playback error: {e}")
-
-def flash_led_while_recording():
-    """Flash LED while recording is in progress"""
-    print("[LED] Starting LED flash pattern")
-    
-    try:
-        flash_duration = 5.0  # Match recording duration
-        start_time = time.time()
-        
-        while time.time() - start_time < flash_duration:
-            # Flash pattern: on for 0.2s, off for 0.2s
-            GPIO.output(LED_PIN, GPIO.HIGH)
-            time.sleep(0.2)
-            GPIO.output(LED_PIN, GPIO.LOW)
-            time.sleep(0.2)
-            
-    except Exception as e:
-        print(f"[LED] Error in flash thread: {e}")
-    finally:
-        # Ensure LED is off
-        GPIO.output(LED_PIN, GPIO.LOW)
 
 # ============================================================================
 # FSR MONITORING THREAD
@@ -1094,6 +1163,9 @@ def setup_tkinter_ui():
     weather_frame.grid(row=0, column=0, sticky="nsew")
     weather_frame.grid_remove()
     
+    # Initialize recording indicator (hidden initially)
+    create_recording_indicator()
+    
     # Start UI command processor
     root.after(100, process_ui_commands)
     
@@ -1111,12 +1183,16 @@ def setup_tkinter_ui():
 
 def cleanup_and_exit():
     """Cleanup and exit the application"""
-    global fsr_thread_running
+    global fsr_thread_running, recording_flash_id
     
     print("\n[Cleanup] Cleaning up resources...")
     
     # Stop FSR thread
     fsr_thread_running = False
+    
+    # Stop any flashing animation
+    if recording_flash_id and root and root.winfo_exists():
+        root.after_cancel(recording_flash_id)
     
     # Cleanup GPIO
     GPIO.output(LED_PIN, GPIO.LOW)
@@ -1149,11 +1225,14 @@ def main():
     print("  q = Quit")
     print("\nFSR CONTROL:")
     print("  Double-tap FSR = random mood → 3 sec → record → happy face")
+    print("\nVISUAL FEEDBACK:")
+    print("  Flashing red dot in top-right corner during recording")
     print("\nCHANGES MADE:")
     print("  1. Starts with HAPPY FACE (not black screen)")
     print("  2. FSR shows random mood (70% happy, 30% angry)")
     print("  3. Non-blocking recording")
-    print("  4. Returns to happy face after recording")
+    print("  4. Visual recording indicator (flashing red dot)")
+    print("  5. Returns to happy face after recording")
     print("="*60)
     
     # Check if image directory exists
