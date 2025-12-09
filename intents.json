@@ -1,0 +1,48 @@
+{
+  "intents": [
+    {
+      "tag": "display_calendar",
+      "patterns": [
+        "What is the day today",
+        "What's today",
+        "What day is it",
+        "Can you tell me today's date",
+        "Show me the calendar",
+        "Open the calendar",
+        "Show me the date",
+        "Tell me the date today",
+        "What day are we on",
+        "What is the date now",
+        "Can I see the calendar",
+        "Display today's calendar",
+        "Today is what day",
+        "Tell me what day it is",
+        "What is today's date"
+      ]
+    },
+
+    {
+      "tag": "display_weather",
+      "patterns": [
+        "What's the weather",
+        "How's the weather today",
+        "Tell me the weather",
+        "What's the weather like right now",
+        "Give me the weather update",
+        "Is it raining",
+        "Is it sunny outside",
+        "Is it hot outside",
+        "Weather today please",
+        "Weather update",
+        "Can you show me the weather",
+        "What's the temperature outside",
+        "Temperature today",
+        "How cold is it",
+        "How hot is it",
+        "Show me the weather for today",
+        "Tell me the temperature",
+        "Is it cloudy"
+      ]
+    }
+  ]
+}
