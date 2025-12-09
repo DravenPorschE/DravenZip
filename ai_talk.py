@@ -50,11 +50,20 @@ def getSekaiResponse(user_message, mood):
     base_prompt = {
         "role": "system",
         "content":
-            "You are Sekai. You speak English unless a language is explicitly ordered.\n"
-            "Your tone depends entirely on the supplied MOOD variable.\n"
-            "Do NOT add extra JSON or metadata. Only produce raw dialogue text.\n"
-            "If its all about a command like opening weather or opening of calendar, you should respond short by saying opening calendar or similar with a hint of the mood to spice it up a bit"
+            "You are Sekai. Answer ALWAYS in JSON with EXACTLY this structure:\n"
+            "{\n"
+            "  \"result\": \"<your response text only>\",\n"
+            "  \"command\": \"<command>\"\n"
+            "}\n\n"
+            "RULES:\n"
+            "- 'result' contains only Sekai's dialogue (no JSON, no explanations).\n"
+            "- 'command' must be one of: \"none\", \"display_calendar\", \"display_weather\".\n"
+            "- Detect if the message means showing weather or calendar, otherwise command=\"none\".\n"
+            "- Your tone still depends on the MOOD variable.\n"
+            "- Respond ONLY in valid JSON — no extra text.\n"
+            "- If the user uses another language, respond in English.\n"
     }
+
 
     # User message injected as placeholder
     user_prompt = {
